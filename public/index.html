@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Birthday Wisher</title>
+		<style>
+			h1 {
+				width: 100%;
+				text-align: center;
+			}
+			.message {
+				display: none;
+				padding: 10px;
+				margin-top: 10px;
+			}
+			.success {
+				background-color: #d4edda;
+				color: #155724;
+			}
+			.error {
+				background-color: #f8d7da;
+				color: #721c24;
+			}
+			table {
+				width: 100%;
+				border-collapse: collapse;
+				margin-top: 20px;
+			}
+			table,
+			th,
+			td {
+				border: 1px solid black;
+			}
+			th,
+			td {
+				padding: 8px;
+				text-align: left;
+			}
+		</style>
+	</head>
+	<body>
+		<h1>Birthday Wisher</h1>
+		<form method="post" action="/api/user" id="birthday-form">
+			<fieldset>
+				<label for="username">Enter your username:</label>
+				<input type="text" name="username" id="username" required />
+			</fieldset>
+			<fieldset>
+				<label for="email">Enter your email:</label>
+				<input type="email" name="email" id="email" required />
+			</fieldset>
+			<fieldset>
+				<label for="dob">Enter your birthday (YYYY-MM-DD):</label>
+				<input type="date" id="birthday" name="dob" required />
+			</fieldset>
+			<button type="submit">Submit</button>
+		</form>
+		<div id="message" class="message"></div>
+
+		<h2>Registered Users</h2>
+		<table id="user-table">
+			<thead>
+				<tr>
+					<th>Username</th>
+					<th>Email</th>
+					<th>Birthday</th>
+				</tr>
+			</thead>
+			<tbody>
+				<!-- User data will be inserted here -->
+			</tbody>
+		</table>
+
+		<script>
+			document
+				.getElementById("birthday-form")
+				.addEventListener("submit", async function (event) {
+					event.preventDefault();
+
+					const form = event.target;
+					const formData = new FormData(form);
+					const data = Object.fromEntries(formData);
+
+					try {
+						const response = await fetch("/api/user", {
+							method: "POST",
+							headers: {
+								"Content-Type": "application/json",
+							},
+							body: JSON.stringify(data),
+						});
+
+						const result = await response.json();
+						const messageDiv = document.getElementById("message");
+
+						if (response.ok) {
+							messageDiv.textContent =
+								"User created successfully!";
+							messageDiv.className = "message success";
+							loadUsers();
+						} else {
+							messageDiv.textContent =
+								result.message || "An error occurred";
+							messageDiv.className = "message error";
+						}
+						messageDiv.style.display = "block";
+					} catch (error) {
+						const messageDiv = document.getElementById("message");
+						messageDiv.textContent = "An error occurred";
+						messageDiv.className = "message error";
+						messageDiv.style.display = "block";
+					}
+				});
+
+			async function loadUsers() {
+				try {
+					const response = await fetch("/api/users");
+					const { data: users } = await response.json();
+
+					const userTableBody = document
+						.getElementById("user-table")
+						.querySelector("tbody");
+					userTableBody.innerHTML = "";
+
+					users.forEach((user) => {
+						const row = document.createElement("tr");
+
+						const usernameCell = document.createElement("td");
+						usernameCell.textContent = user.username;
+						row.appendChild(usernameCell);
+
+						const emailCell = document.createElement("td");
+						emailCell.textContent = user.email;
+						row.appendChild(emailCell);
+
+						const dobCell = document.createElement("td");
+						dobCell.textContent = new Date(user.dob)
+							.toISOString()
+							.split("T")[0];
+						row.appendChild(dobCell);
+
+						userTableBody.appendChild(row);
+					});
+				} catch (error) {
+					console.error("Error loading users:", error);
+				}
+			}
+
+			// Load users when the page loads
+			window.onload = loadUsers;
+		</script>
+	</body>
+</html>
